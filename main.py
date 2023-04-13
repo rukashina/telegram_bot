@@ -5,7 +5,8 @@ import re
 import sqlite3
 from telebot import types
 
-text = open("words/sities.txt")
+# слова страны
+text = open("words/countries.txt")
 countries = []
 for i in text:
     countries.append(i)
@@ -18,6 +19,21 @@ countries_are_done = []
 countries_lower = []
 for c in countries:
     countries_lower.append(c.lower())
+
+# города
+text = open("words/cities.txt")
+cities = []
+for i in text:
+    cities.append(i)
+
+for i in range(len(cities)):
+    if cities[i][-1] == "\n":
+        cities[i] = cities[i][:-1]
+
+cities_are_done = []
+cities_lower = []
+for c in cities:
+    cities_lower.append(c.lower())
 
 wikipedia.set_lang("ru")
 
@@ -43,26 +59,113 @@ def getwiki(s):
         return 'В энциклопедии нет информации об этом'
 
 
+def game_cities(m):
+    city = m.lower()
+    maybe_cities = []
+    if cities_are_done:
+        last_country = cities_are_done[-1]
+        if not (city in cities_lower):
+            return 'Извините, я не знаю такой страны'
+        elif city in cities_are_done:
+            return 'Эта страна уже была'
+        elif city[0] != last_country[-1]:
+            return 'Эта страна не подходит\nНажмите /help, чтобы прочитать правила'
+        else:
+            cities_are_done.append(city)
+            for c in cities:
+                if (c[0].lower() == city[-1]) and (not (c.lower() in cities_are_done)):
+                    maybe_cities.append(c)
+            if maybe_cities:
+                c = random.choice(maybe_cities)
+                cities_are_done.append(c.lower())
+                return c
+            else:
+                return 'Вы победили!\nЯ не знаю больше слов'
+    else:
+        if not (city in cities_lower):
+            return 'Извините, я не знаю такой страны'
+        else:
+            cities_are_done.append(city)
+            for c in cities:
+                if (c[0].lower() == city[-1]) and (not (c.lower() in cities_are_done)):
+                    maybe_cities.append(c)
+            if maybe_cities:
+                c = random.choice(maybe_cities)
+                cities_are_done.append(c.lower())
+                return c
+            else:
+                return 'Вы победили!\nЯ не знаю больше слов'
+
+
+def game_countries(m):
+    country = m.lower()
+    maybe_countries = []
+    if countries_are_done:
+        last_country = countries_are_done[-1]
+        if not (country in countries_lower):
+            return 'Извините, я не знаю такой страны'
+        elif country in countries_are_done:
+            return 'Эта страна уже была'
+        elif country[0] != last_country[-1]:
+            return 'Эта страна не подходит\nНажмите /help, чтобы прочитать правила'
+        else:
+            countries_are_done.append(country)
+            for c in countries:
+                if (c[0].lower() == country[-1]) and (not (c.lower() in countries_are_done)):
+                    maybe_countries.append(c)
+            if maybe_countries:
+                c = random.choice(maybe_countries)
+                countries_are_done.append(c.lower())
+                return c
+            else:
+                return 'Вы победили!\nЯ не знаю больше слов'
+    else:
+        if not (country in countries_lower):
+            return 'Извините, я не знаю такой страны'
+        else:
+            countries_are_done.append(country)
+            for c in countries:
+                if (c[0].lower() == country[-1]) and (not (c.lower() in countries_are_done)):
+                    maybe_countries.append(c)
+            if maybe_countries:
+                c = random.choice(maybe_countries)
+                countries_are_done.append(c.lower())
+                return c
+            else:
+                return 'Вы победили!\nЯ не знаю больше слов'
+
+
 bot = telebot.TeleBot('6170584232:AAHSEAblHQd4_Nryo9LZEU4na99zw2VBnIw')
 game_is_start = False
+now_game = ''
 
 
 @bot.message_handler(commands=["start"])
 def start(m, res=False):
+    global now_game
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("Игра в страны")
-    item2 = types.KeyboardButton("В разработке")
+    item2 = types.KeyboardButton("Игра в города")
     markup.add(item1)
     markup.add(item2)
+    now_game = ''
     bot.send_message(m.chat.id, 'Привет! Я бот-"игра в города"!\nЧем могу помочь?', reply_markup=markup)
 
 
 @bot.message_handler(commands=["help"])
 def help(m, res=False):
-    bot.send_message(m.chat.id, 'Пишите страну, начинающуюся на букву, на которую заканчивается предыдущее слово\n'
+    if now_game == 'co':
+        bot.send_message(m.chat.id, 'Пишите страну, начинающуюся на букву, на которую заканчивается предыдущее слово\n'
                                 'Слова не должны повторяться\n'
                                 'Если хотите узнать о стране, что я назвал, используйте команду /wiki\n'
                                 'Чтобы узнать краткие сведения нажмите /info')
+    elif now_game == 'co':
+        bot.send_message(m.chat.id, 'Пишите город, начинающийся на букву, на которую заканчивается предыдущее слово\n'
+                                'Слова не должны повторяться\n'
+                                'Если хотите узнать о городе, что я назвал, используйте команду /wiki\n'
+                                'Чтобы узнать краткие сведения нажмите /info')
+    else:
+        bot.send_message(m.chat.id, 'Я пока ничем не могу вам помочь!')
 
 
 @bot.message_handler(commands=["wiki"])
@@ -103,49 +206,25 @@ def info(m, res=False):
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
     global countries_are_done
+    global cities_are_done
+    global now_game
     if message.text == 'Игра в страны':
+        now_game = 'co'
         countries_are_done = []
         bot.send_message(message.chat.id, 'Сыграем в игру? Напишите любую страну.\n'
                                       'Чтобы узнать правила используйте команду /help\n')
-    else:
-        country = (message.text).lower()
-        maybe_countries = []
-        if countries_are_done:
-            last_country = countries_are_done[-1]
-            if not (country in countries_lower):
-                bot.send_message(message.chat.id, 'Извините, я не знаю такой страны')
-            elif country in countries_are_done:
-                bot.send_message(message.chat.id, 'Эта страна уже была')
-            elif country[0] != last_country[-1]:
-                bot.send_message(message.chat.id, 'Эта страна не подходит\n'
-                                              'Нажмите /help, чтобы прочитать правила')
-            else:
-                countries_are_done.append(country)
-                for c in countries:
-                    if (c[0].lower() == country[-1]) and (not (c.lower() in countries_are_done)):
-                        maybe_countries.append(c)
-                if maybe_countries:
-                    c = random.choice(maybe_countries)
-                    bot.send_message(message.chat.id, c)
-                    countries_are_done.append(c.lower())
-                else:
-                    bot.send_message(message.chat.id, 'Вы победили!\n'
-                                                  'Я не знаю больше слов')
-        else:
-            if not (country in countries_lower):
-                bot.send_message(message.chat.id, 'Извините, я не знаю такой страны')
-            else:
-                countries_are_done.append(country)
-                for c in countries:
-                    if (c[0].lower() == country[-1]) and (not (c.lower() in countries_are_done)):
-                        maybe_countries.append(c)
-                if maybe_countries:
-                    c = random.choice(maybe_countries)
-                    bot.send_message(message.chat.id, c)
-                    countries_are_done.append(c.lower())
-                else:
-                    bot.send_message(message.chat.id, 'Вы победили!\n'
-                                                  'Я не знаю больше слов')
+    elif message.text == 'Игра в города':
+        now_game = 'ci'
+        cities_are_done = []
+        bot.send_message(message.chat.id, 'Сыграем в игру? Напишите любой город.\n'
+                                      'Чтобы узнать правила используйте команду /help\n')
+
+    elif now_game == 'co':
+        answer = game_countries(message.text)
+        bot.send_message(message.chat.id, answer)
+    elif now_game == 'ci':
+        answer = game_cities(message.text)
+        bot.send_message(message.chat.id, answer)
 
 
 bot.polling(none_stop=True, interval=0)
