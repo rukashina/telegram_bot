@@ -1,33 +1,19 @@
 import telebot
 import random
-import wikipedia, re
+import wikipedia
+import re
 import sqlite3
+from telebot import types
 
+text = open("words/sities.txt")
+countries = []
+for i in text:
+    countries.append(i)
 
-countries = ['Абхазия', 'Албания', 'Ангола', 'Армения', 'Австралия', 'Алжир', 'Андорра', 'Аруба', 'Австрия',
-             'Антигуа и Барбуда', 'Афганистан', 'Азейбарджан', 'Аргентина', 'Багамские острова', 'Белиз', 'Бермудские острова',
-             'Босния и Герцеговина', 'Бруней', 'Бангладеш', 'Белоруссия', 'Болгария', 'Ботсвана', 'Буркина-фасо',
-             'Барбадос', 'Бельгия', 'Боливия', 'Бразилия', 'Бурунди', 'Бахрейн', 'Бенин', 'Бонэйр', 'Бутан',
-             'Вануату', 'Венесуэла', 'Ватикан', 'Великобритания', 'Вьетнам', 'Венгрия', 'Габон', 'Гана', 'Германия',
-             'Греция', 'Гаити', 'Гватемала', 'Гондурас', 'Грузия', 'Гайана', 'Гвинея', 'Гонконг', 'Гамбия',
-             'Гвинея-Бисау', 'Гренада', 'Дания', 'Демократическая Республика Конго', 'Джерси', 'Джибути', 'Доминика',
-             'Доминикана', 'Египет', 'Замбия', 'Зимбабве', 'Израиль', 'Ирак', 'Испания', 'Индия', 'Иран', 'Италия',
-             'Индонезия', 'Ирландия', 'Иордания', 'Исландия', 'Йемен', 'Кабо-Верде', 'Канада', 'Киргизия', 'Корея',
-             'Кувейт', 'Казахстан', 'Катар', 'Кирибати', 'Коморские острова', 'Коста-Рика', 'Кюрасао', 'Камбоджа',
-             'Кения', 'Китай', 'Конго', 'Камерун', 'Кипр', 'Колумбия', 'Куба', 'КНДР', 'Лаос', 'Ливан', 'Люксембург',
-             'Латвия', 'Ливия', 'Лесото', 'Литва', 'Либерия', 'Лихтенштейн', 'Маврикий', 'Малави', 'Мальдивы',
-             'Мозамбик', 'Мьянма', 'Мавритания', 'Малайзия', 'Марокко', 'Молдавия', 'Мадагаскар', 'Мали', 'Монако',
-             'Македония', 'Мальта', 'Мексика', 'Монголия', 'Намибия', 'Нигерия', 'Норвегия', 'Науру', 'Нидерланды',
-             'Непал', 'Никарагуа', 'Нигер', 'Новая Зеландия', 'ОАЭ', 'Оман', 'Пакистан', 'Парагвай', 'Португалия',
-             'Палау', 'Перу', 'Панама', 'Пуэрто-Рико', 'Папуа-Новая Гвинея', 'Польша', 'Россия', 'Руанда', 'Румыния',
-             'Саба', 'Сенегал', 'Сан-Томе и Принсипи', 'Сен-Мартен', 'Сирия', 'Соломоновы острова', 'Сьерра-Леоне',
-             'Сальвадор', 'Саудовская Аравия', 'Сент-Винсент и Гренадины', 'Сербия', 'Словакия', 'Сомали', 'Самоа',
-             'Свазиленд', 'Сент-Китс и Невис', 'Сингапур', 'Словения', 'Судан', 'Сан-Марино', 'Сейшелы', 'Сент-Люсия',
-             'Синт-Эстатиус', 'США', 'Суринам', 'Таджикистан', 'Токелау', 'Тунис', 'Таиланд', 'Тонга', 'Туркменистан',
-             'Танзания', 'Тринидад и Тобаго', 'Турция', 'Того', 'Тувалу', 'Уганда', 'Уругвай', 'Узбекистан', 'Украина',
-             'Уоллис и Футуна', 'Фарерские острова', 'Финляндия', 'Фиджи', 'Франция', 'Филиппины', 'Полинезия',
-             'Хорватия', 'ЦАР', 'ЧАД', 'Черногория', 'Чехия', 'Чили', 'Швейцария', 'Швеция', 'Шри-Ланка', 'Эквадор',
-             'Эфиопия', 'Эритрея', 'Эстония', 'ЮАР', 'Южный Судан', 'Ямайка', 'Япония']
+for i in range(len(countries)):
+    if countries[i][-1] == "\n":
+        countries[i] = countries[i][:-1]
+
 countries_are_done = []
 countries_lower = []
 for c in countries:
@@ -39,33 +25,36 @@ wikipedia.set_lang("ru")
 def getwiki(s):
     try:
         ny = wikipedia.page(s)
-        wikitext=ny.content[:1000]
-        wikimas=wikitext.split('.')
-        wikimas = wikimas[:-1]
-        wikitext2 = ''
-        for x in wikimas:
+        text=ny.content[:1000]
+        wiki=text.split('.')
+        wiki = wiki[:-1]
+        wikitext = ''
+        for x in wiki:
             if not('==' in x):
                 if(len((x.strip()))>3):
-                   wikitext2=wikitext2+x+'.'
+                   wikitext=wikitext+x+'.'
             else:
                 break
-        wikitext2=re.sub('\([^()]*\)', '', wikitext2)
-        wikitext2=re.sub('\([^()]*\)', '', wikitext2)
-        wikitext2=re.sub('\{[^\{\}]*\}', '', wikitext2)
-        return wikitext2
+        wikitext=re.sub('\([^()]*\)', '', wikitext)
+        wikitext=re.sub('\([^()]*\)', '', wikitext)
+        wikitext=re.sub('\{[^\{\}]*\}', '', wikitext)
+        return wikitext
     except Exception as e:
         return 'В энциклопедии нет информации об этом'
 
 
 bot = telebot.TeleBot('6170584232:AAHSEAblHQd4_Nryo9LZEU4na99zw2VBnIw')
+game_is_start = False
 
 
 @bot.message_handler(commands=["start"])
 def start(m, res=False):
-    global countries_are_done
-    countries_are_done = []
-    bot.send_message(m.chat.id, 'Сыграем в игру? Напишите любую страну.\n'
-                                'Чтобы узнать правила используйте команду /help\n')
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton("Игра в страны")
+    item2 = types.KeyboardButton("В разработке")
+    markup.add(item1)
+    markup.add(item2)
+    bot.send_message(m.chat.id, 'Привет! Я бот-"игра в города"!\nЧем могу помочь?', reply_markup=markup)
 
 
 @bot.message_handler(commands=["help"])
@@ -113,43 +102,49 @@ def info(m, res=False):
 
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
-    country = (message.text).lower()
-    maybe_countries = []
-    if countries_are_done:
-        last_country = countries_are_done[-1]
-        if not (country in countries_lower):
-            bot.send_message(message.chat.id, 'Извините, я не знаю такой страны')
-        elif country in countries_are_done:
-            bot.send_message(message.chat.id, 'Эта страна уже была')
-        elif country[0] != last_country[-1]:
-            bot.send_message(message.chat.id, 'Эта страна не подходит\n'
-                                              'Нажмите /help, чтобы прочитать правила')
-        else:
-            countries_are_done.append(country)
-            for c in countries:
-                if (c[0].lower() == country[-1]) and (not (c.lower() in countries_are_done)):
-                    maybe_countries.append(c)
-            if maybe_countries:
-                c = random.choice(maybe_countries)
-                bot.send_message(message.chat.id, c)
-                countries_are_done.append(c.lower())
-            else:
-                bot.send_message(message.chat.id, 'Вы победили!\n'
-                                                  'Я не знаю больше слов')
+    global countries_are_done
+    if message.text == 'Игра в страны':
+        countries_are_done = []
+        bot.send_message(message.chat.id, 'Сыграем в игру? Напишите любую страну.\n'
+                                      'Чтобы узнать правила используйте команду /help\n')
     else:
-        if not (country in countries_lower):
-            bot.send_message(message.chat.id, 'Извините, я не знаю такой страны')
-        else:
-            countries_are_done.append(country)
-            for c in countries:
-                if (c[0].lower() == country[-1]) and (not (c.lower() in countries_are_done)):
-                    maybe_countries.append(c)
-            if maybe_countries:
-                c = random.choice(maybe_countries)
-                bot.send_message(message.chat.id, c)
-                countries_are_done.append(c.lower())
+        country = (message.text).lower()
+        maybe_countries = []
+        if countries_are_done:
+            last_country = countries_are_done[-1]
+            if not (country in countries_lower):
+                bot.send_message(message.chat.id, 'Извините, я не знаю такой страны')
+            elif country in countries_are_done:
+                bot.send_message(message.chat.id, 'Эта страна уже была')
+            elif country[0] != last_country[-1]:
+                bot.send_message(message.chat.id, 'Эта страна не подходит\n'
+                                              'Нажмите /help, чтобы прочитать правила')
             else:
-                bot.send_message(message.chat.id, 'Вы победили!\n'
+                countries_are_done.append(country)
+                for c in countries:
+                    if (c[0].lower() == country[-1]) and (not (c.lower() in countries_are_done)):
+                        maybe_countries.append(c)
+                if maybe_countries:
+                    c = random.choice(maybe_countries)
+                    bot.send_message(message.chat.id, c)
+                    countries_are_done.append(c.lower())
+                else:
+                    bot.send_message(message.chat.id, 'Вы победили!\n'
+                                                  'Я не знаю больше слов')
+        else:
+            if not (country in countries_lower):
+                bot.send_message(message.chat.id, 'Извините, я не знаю такой страны')
+            else:
+                countries_are_done.append(country)
+                for c in countries:
+                    if (c[0].lower() == country[-1]) and (not (c.lower() in countries_are_done)):
+                        maybe_countries.append(c)
+                if maybe_countries:
+                    c = random.choice(maybe_countries)
+                    bot.send_message(message.chat.id, c)
+                    countries_are_done.append(c.lower())
+                else:
+                    bot.send_message(message.chat.id, 'Вы победили!\n'
                                                   'Я не знаю больше слов')
 
 
