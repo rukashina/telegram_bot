@@ -6,7 +6,7 @@ import sqlite3
 from telebot import types
 
 # слова страны
-text = open("words/countries.txt")
+text = open("data/words/countries.txt")
 countries = []
 for i in text:
     countries.append(i)
@@ -21,7 +21,7 @@ for c in countries:
     countries_lower.append(c.lower())
 
 # города
-text = open("words/cities.txt")
+text = open("data/words/cities.txt")
 cities = []
 for i in text:
     cities.append(i)
@@ -59,17 +59,24 @@ def getwiki(s):
         return 'В энциклопедии нет информации об этом'
 
 
+def need():
+    global cities_are_done
+    global countries_are_done
+    cities_are_done = []
+    countries_are_done = []
+
+
 def game_cities(m):
     city = m.lower()
     maybe_cities = []
     if cities_are_done:
-        last_country = cities_are_done[-1]
+        last_cities = cities_are_done[-1]
         if not (city in cities_lower):
-            return 'Извините, я не знаю такой страны'
+            return 'Извините, я не знаю такого города'
         elif city in cities_are_done:
-            return 'Эта страна уже была'
-        elif city[0] != last_country[-1]:
-            return 'Эта страна не подходит\nНажмите /help, чтобы прочитать правила'
+            return 'Этот город уже был'
+        elif city[0] != last_cities[-1]:
+            return 'Этот город не подходит\nНажмите /help, чтобы прочитать правила'
         else:
             cities_are_done.append(city)
             for c in cities:
@@ -80,7 +87,8 @@ def game_cities(m):
                 cities_are_done.append(c.lower())
                 return c
             else:
-                return 'Вы победили!\nЯ не знаю больше слов'
+                need()
+                return 'Вы победили!\nЯ не знаю больше слов\nНачинаем сначала!'
     else:
         if not (city in cities_lower):
             return 'Извините, я не знаю такой страны'
@@ -94,7 +102,8 @@ def game_cities(m):
                 cities_are_done.append(c.lower())
                 return c
             else:
-                return 'Вы победили!\nЯ не знаю больше слов'
+                need()
+                return 'Вы победили!\nЯ не знаю больше слов\nНачинаем сначала!'
 
 
 def game_countries(m):
@@ -118,7 +127,8 @@ def game_countries(m):
                 countries_are_done.append(c.lower())
                 return c
             else:
-                return 'Вы победили!\nЯ не знаю больше слов'
+                need()
+                return 'Вы победили!\nЯ не знаю больше слов\nНачинаем сначала!'
     else:
         if not (country in countries_lower):
             return 'Извините, я не знаю такой страны'
@@ -132,7 +142,8 @@ def game_countries(m):
                 countries_are_done.append(c.lower())
                 return c
             else:
-                return 'Вы победили!\nЯ не знаю больше слов'
+                need()
+                return 'Вы победили!\nЯ не знаю больше слов\nНачинаем сначала!'
 
 
 bot = telebot.TeleBot('6170584232:AAHSEAblHQd4_Nryo9LZEU4na99zw2VBnIw')
@@ -159,8 +170,8 @@ def help(m, res=False):
                                 'Слова не должны повторяться\n'
                                 'Если хотите узнать о стране, что я назвал, используйте команду /wiki\n'
                                 'Чтобы узнать краткие сведения нажмите /info')
-    elif now_game == 'co':
-        bot.send_message(m.chat.id, 'Пишите город, начинающийся на букву, на которую заканчивается предыдущее слово\n'
+    elif now_game == 'ci':
+        bot.send_message(m.chat.id, 'Пишите город России, начинающийся на букву, на которую заканчивается предыдущее слово\n'
                                 'Слова не должны повторяться\n'
                                 'Если хотите узнать о городе, что я назвал, используйте команду /wiki\n'
                                 'Чтобы узнать краткие сведения нажмите /info')
@@ -175,32 +186,35 @@ def wiki(m, res=False):
 
 @bot.message_handler(commands=["info"])
 def info(m, res=False):
-    con = sqlite3.connect("countries.db")
-    cur = con.cursor()
-    n = countries_lower.index(countries_are_done[-1]) + 1
-    result = cur.execute("""SELECT
-        country.id,
-        country.name,
-        country.capital,
-        country.square,
-        country.population,
-        continents.continent
-    FROM
-        country
-    LEFT JOIN continents
-        ON continents.id = country.id_continent
-    WHERE country.id = ?""", (n,)).fetchall()
+    try:
+        con = sqlite3.connect("countries.db")
+        cur = con.cursor()
+        n = countries_lower.index(countries_are_done[-1]) + 1
+        result = cur.execute("""SELECT
+            country.id,
+            country.name,
+            country.capital,
+            country.square,
+            country.population,
+            continents.continent
+        FROM
+            country
+        LEFT JOIN continents
+            ON continents.id = country.id_continent
+        WHERE country.id = ?""", (n,)).fetchall()
 
-    for elem in result:
-        information = list(elem)
+        for elem in result:
+            information = list(elem)
 
-    result = f'Страна: {information[1]}\n' \
+        result = f'Страна: {information[1]}\n' \
              f'Столица: {information[2]}\n' \
              f'Площадь: {information[3]} км²\n' \
              f'Численность населеня: {information[4]} чел.\n' \
              f'Материк: {information[5]}\n'
-    con.close()
-    bot.send_message(m.chat.id, result)
+        con.close()
+        bot.send_message(m.chat.id, result)
+    except Exception as e:
+        bot.send_message(m.chat.id, 'У меня нет информации об этом')
 
 
 @bot.message_handler(content_types=["text"])
@@ -211,13 +225,40 @@ def handle_text(message):
     if message.text == 'Игра в страны':
         now_game = 'co'
         countries_are_done = []
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("Назад")
+        item2 = types.KeyboardButton("Сброс")
+        markup.add(item1)
+        markup.add(item2)
         bot.send_message(message.chat.id, 'Сыграем в игру? Напишите любую страну.\n'
-                                      'Чтобы узнать правила используйте команду /help\n')
+                                      'Чтобы узнать правила используйте команду /help\n',
+                         reply_markup=markup)
+
     elif message.text == 'Игра в города':
         now_game = 'ci'
         cities_are_done = []
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("Назад")
+        item2 = types.KeyboardButton("Сброс")
+        markup.add(item1)
+        markup.add(item2)
         bot.send_message(message.chat.id, 'Сыграем в игру? Напишите любой город.\n'
-                                      'Чтобы узнать правила используйте команду /help\n')
+                                      'Чтобы узнать правила используйте команду /help\n',
+                         reply_markup=markup)
+
+    elif message.text == 'Назад':
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("Игра в страны")
+        item2 = types.KeyboardButton("Игра в города")
+        markup.add(item1)
+        markup.add(item2)
+        now_game = ''
+        bot.send_message(message.chat.id, 'Привет! Я бот-"игра в города"!\nЧем могу помочь?', reply_markup=markup)
+
+    elif message.text == 'Сброс':
+        cities_are_done = []
+        countries_are_done = []
+        bot.send_message(message.chat.id, 'Начинаем сначала!')
 
     elif now_game == 'co':
         answer = game_countries(message.text)
