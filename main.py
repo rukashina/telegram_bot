@@ -4,6 +4,7 @@ import wikipedia
 import re
 import sqlite3
 from telebot import types
+from fuzzywuzzy import fuzz
 
 # слова страны
 text = open("data/words/countries.txt")
@@ -72,7 +73,8 @@ def game_cities(m):
     if cities_are_done:
         last_cities = cities_are_done[-1]
         if not (city in cities_lower):
-            return 'Извините, я не знаю такого города'
+            mayby = answer(city)
+            return f'Извините, я не знаю такого города\nВозможно вы имели ввиду "{mayby.capitalize()}"?'
         elif city in cities_are_done:
             return 'Этот город уже был'
         elif city[0] != last_cities[-1]:
@@ -91,7 +93,8 @@ def game_cities(m):
                 return 'Вы победили!\nЯ не знаю больше слов\nНачинаем сначала!'
     else:
         if not (city in cities_lower):
-            return 'Извините, я не знаю такой страны'
+            mayby = answer(city)
+            return f'Извините, я не знаю такого города\nВозможно вы имели ввиду "{mayby.capitalize()}"?'
         else:
             cities_are_done.append(city)
             for c in cities:
@@ -112,7 +115,8 @@ def game_countries(m):
     if countries_are_done:
         last_country = countries_are_done[-1]
         if not (country in countries_lower):
-            return 'Извините, я не знаю такой страны'
+            mayby = answer(country)
+            return f'Извините, я не знаю такой страны\nВозможно вы имели ввиду "{mayby.capitalize()}"?'
         elif country in countries_are_done:
             return 'Эта страна уже была'
         elif country[0] != last_country[-1]:
@@ -131,7 +135,8 @@ def game_countries(m):
                 return 'Вы победили!\nЯ не знаю больше слов\nНачинаем сначала!'
     else:
         if not (country in countries_lower):
-            return 'Извините, я не знаю такой страны'
+            mayby = answer(country)
+            return f'Извините, я не знаю такой страны\nВозможно вы имели ввиду "{mayby.capitalize()}"?'
         else:
             countries_are_done.append(country)
             for c in countries:
@@ -146,7 +151,34 @@ def game_countries(m):
                 return 'Вы победили!\nЯ не знаю больше слов\nНачинаем сначала!'
 
 
-bot = telebot.TeleBot('6170584232:AAHSEAblHQd4_Nryo9LZEU4na99zw2VBnIw')
+def answer(text):
+    try:
+        a = 0
+        n = 0
+        nn = 0
+        if now_game == 'co':
+            for q in countries:
+                aa=(fuzz.token_sort_ratio(q, text))
+                if(aa > a and aa!= a):
+                    a = aa
+                    nn = n
+                n = n + 1
+            s = countries[nn]
+        else:
+            for q in cities:
+                aa=(fuzz.token_sort_ratio(q, text))
+                if(aa > a and aa!= a):
+                    a = aa
+                    nn = n
+                n = n + 1
+            s = cities[nn]
+        return s
+
+    except:
+        return 'Ошибка'
+
+
+bot = telebot.TeleBot('5763117043:AAGWT7DCJKQsHbrPDnE_sEJMO39us1_Sj9A')
 game_is_start = False
 now_game = ''
 
