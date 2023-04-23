@@ -5,6 +5,7 @@ import re
 import sqlite3
 from telebot import types
 from fuzzywuzzy import fuzz
+from random import choice
 
 # слова страны
 text = open("data/words/countries.txt")
@@ -178,21 +179,59 @@ def answer(text):
         return 'Ошибка'
 
 
+def text_materic(a):
+    con = sqlite3.connect("countries.db")
+    cur = con.cursor()
+
+    result = cur.execute("""SELECT
+                continents.continent
+            FROM
+                country
+            LEFT JOIN continents
+                ON continents.id = country.id_continent
+            WHERE country.name = ?""", (a,)).fetchall()
+    for elem in result:
+        information = list(elem)
+    con.close()
+
+    return information[0]
+
+
+def text_capital(a):
+    con = sqlite3.connect("countries.db")
+    cur = con.cursor()
+
+    result = cur.execute("""SELECT
+                capital
+            FROM
+                country
+            WHERE name = ?""", (a,)).fetchall()
+    for elem in result:
+        information = list(elem)
+    con.close()
+
+    return information[0]
+
+
 bot = telebot.TeleBot('5763117043:AAGWT7DCJKQsHbrPDnE_sEJMO39us1_Sj9A')
 game_is_start = False
 now_game = ''
+now = ''
+word = ''
 
 
 @bot.message_handler(commands=["start"])
 def start(m, res=False):
     global now_game
+    global now
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    item1 = types.KeyboardButton("Игра в страны")
-    item2 = types.KeyboardButton("Игра в города")
+    item1 = types.KeyboardButton("Игра")
+    item2 = types.KeyboardButton("Тест")
     markup.add(item1)
     markup.add(item2)
     now_game = ''
-    bot.send_message(m.chat.id, 'Привет! Я бот-"игра в города"!\nЧем могу помочь?', reply_markup=markup)
+    now = ''
+    bot.send_message(m.chat.id, 'Привет! Я бот - "страны и города"!\nЧем могу помочь?', reply_markup=markup)
 
 
 @bot.message_handler(commands=["help"])
@@ -208,21 +247,27 @@ def help(m, res=False):
                                 'Если хотите узнать о городе, что я назвал, используйте команду /wiki\n'
                                 'Чтобы узнать краткие сведения нажмите /info')
     else:
-        bot.send_message(m.chat.id, 'Я пока ничем не могу вам помочь!')
+        bot.send_message(m.chat.id, 'Извините, эта функция сейчас не доступна')
 
 
 @bot.message_handler(commands=["wiki"])
 def wiki(m, res=False):
-    bot.send_message(m.chat.id, getwiki(countries_are_done[-1]))
+    if now_game == 'co':
+        bot.send_message(m.chat.id, getwiki(countries_are_done[-1]))
+    elif now_game == 'ci':
+        bot.send_message(m.chat.id, getwiki(cities_are_done[-1]))
+    else:
+        bot.send_message(m.chat.id, 'Извините, эта функция сейчас не доступна')
 
 
 @bot.message_handler(commands=["info"])
 def info(m, res=False):
-    try:
-        con = sqlite3.connect("countries.db")
-        cur = con.cursor()
-        n = countries_lower.index(countries_are_done[-1]) + 1
-        result = cur.execute("""SELECT
+    if now_game == 'co':
+        try:
+            con = sqlite3.connect("countries.db")
+            cur = con.cursor()
+            n = countries_lower.index(countries_are_done[-1]) + 1
+            result = cur.execute("""SELECT
             country.id,
             country.name,
             country.capital,
@@ -235,18 +280,20 @@ def info(m, res=False):
             ON continents.id = country.id_continent
         WHERE country.id = ?""", (n,)).fetchall()
 
-        for elem in result:
-            information = list(elem)
+            for elem in result:
+                information = list(elem)
 
-        result = f'Страна: {information[1]}\n' \
+            result = f'Страна: {information[1]}\n' \
              f'Столица: {information[2]}\n' \
              f'Площадь: {information[3]} км²\n' \
              f'Численность населеня: {information[4]} чел.\n' \
              f'Материк: {information[5]}\n'
-        con.close()
-        bot.send_message(m.chat.id, result)
-    except Exception as e:
-        bot.send_message(m.chat.id, 'У меня нет информации об этом')
+            con.close()
+            bot.send_message(m.chat.id, result)
+        except Exception as e:
+            bot.send_message(m.chat.id, 'У меня нет информации об этом')
+    else:
+        bot.send_message(m.chat.id, 'Извините, эта функция сейчас не доступна')
 
 
 @bot.message_handler(content_types=["text"])
@@ -254,7 +301,31 @@ def handle_text(message):
     global countries_are_done
     global cities_are_done
     global now_game
-    if message.text == 'Игра в страны':
+    global now
+    global word
+
+    if message.text == 'Игра':
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("Игра в страны")
+        item2 = types.KeyboardButton("Игра в города")
+        item3 = types.KeyboardButton("Назад")
+        markup.add(item1)
+        markup.add(item2)
+        markup.add(item3)
+        now_game = ''
+        bot.send_message(message.chat.id, 'Выберите игру', reply_markup=markup)
+    elif message.text == 'Тест':
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("Столицы")
+        item2 = types.KeyboardButton("На каком материке?")
+        item3 = types.KeyboardButton("Назад")
+        markup.add(item1)
+        markup.add(item2)
+        markup.add(item3)
+        now = ''
+        bot.send_message(message.chat.id, 'Выберите тест', reply_markup=markup)
+
+    elif message.text == 'Игра в страны':
         now_game = 'co'
         countries_are_done = []
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -265,7 +336,6 @@ def handle_text(message):
         bot.send_message(message.chat.id, 'Сыграем в игру? Напишите любую страну.\n'
                                       'Чтобы узнать правила используйте команду /help\n',
                          reply_markup=markup)
-
     elif message.text == 'Игра в города':
         now_game = 'ci'
         cities_are_done = []
@@ -278,14 +348,56 @@ def handle_text(message):
                                       'Чтобы узнать правила используйте команду /help\n',
                          reply_markup=markup)
 
-    elif message.text == 'Назад':
+    elif message.text == 'Столицы':
+        now = 'ca'
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        item1 = types.KeyboardButton("Игра в страны")
-        item2 = types.KeyboardButton("Игра в города")
+        item1 = types.KeyboardButton("Назад")
         markup.add(item1)
-        markup.add(item2)
-        now_game = ''
-        bot.send_message(message.chat.id, 'Привет! Я бот-"игра в города"!\nЧем могу помочь?', reply_markup=markup)
+        bot.send_message(message.chat.id, 'Я пишу страну, а вы её столицу',
+                         reply_markup=markup)
+        word = choice(countries)
+        bot.send_message(message.chat.id, word)
+
+    elif message.text == 'На каком материке?':
+        now = 'ma'
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("Назад")
+        markup.add(item1)
+        bot.send_message(message.chat.id, 'Я пишу страну, а вы континент, на котором она находится',
+                         reply_markup=markup)
+        word = choice(countries)
+        bot.send_message(message.chat.id, word)
+
+    elif message.text == 'Назад':
+        if now_game:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            item1 = types.KeyboardButton("Игра в страны")
+            item2 = types.KeyboardButton("Игра в города")
+            item3 = types.KeyboardButton("Назад")
+            markup.add(item1)
+            markup.add(item2)
+            markup.add(item3)
+            now_game = ''
+            bot.send_message(message.chat.id, 'Выберите игру', reply_markup=markup)
+        elif now:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            item1 = types.KeyboardButton("Столицы")
+            item2 = types.KeyboardButton("На каком материке?")
+            item3 = types.KeyboardButton("Назад")
+            markup.add(item1)
+            markup.add(item2)
+            markup.add(item3)
+            now = ''
+            bot.send_message(message.chat.id, 'Выберите тест', reply_markup=markup)
+        else:
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            item1 = types.KeyboardButton("Игра")
+            item2 = types.KeyboardButton("Тест")
+            markup.add(item1)
+            markup.add(item2)
+            now_game = ''
+            now = ''
+            bot.send_message(message.chat.id, 'Привет! Я бот - "страны и города"!\nЧем могу помочь?', reply_markup=markup)
 
     elif message.text == 'Сброс':
         cities_are_done = []
@@ -298,6 +410,20 @@ def handle_text(message):
     elif now_game == 'ci':
         answer = game_cities(message.text)
         bot.send_message(message.chat.id, answer)
+    elif now == 'ca':
+        if message.text.lower() == text_capital(word).lower():
+            bot.send_message(message.chat.id, 'Да, всё верно!')
+        else:
+            bot.send_message(message.chat.id, f'Нет, правильный ответ - {text_capital(word)}')
+        word = choice(countries)
+        bot.send_message(message.chat.id, word)
+    elif now == 'ma':
+        if message.text.lower() == text_materic(word).lower():
+            bot.send_message(message.chat.id, 'Да, всё верно!')
+        else:
+            bot.send_message(message.chat.id, f'Нет, правильный ответ - {text_materic(word)}')
+        word = choice(countries)
+        bot.send_message(message.chat.id, word)
 
 
 bot.polling(none_stop=True, interval=0)
